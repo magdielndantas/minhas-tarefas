@@ -19,30 +19,36 @@ export default function ScopeToggle({ value, onChange, tasks, project }: Props) 
     global: open.filter((t) => t.scope === 'global').length,
   }
 
-  const btn = (v: ScopeFilter, label: string) => (
-    <button
-      key={v}
-      onClick={() => onChange(v)}
-      className={`px-3 py-1 text-xs font-mono rounded transition-colors ${
-        value === v
-          ? 'bg-violet-600 text-white'
-          : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
-      }`}
-    >
-      {label}
-      <span className={`ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
-        value === v ? 'bg-violet-500 text-white' : 'bg-zinc-800 text-zinc-500'
-      }`}>
-        {counts[v]}
-      </span>
-    </button>
-  )
+  const options: { key: ScopeFilter; label: string }[] = [
+    { key: 'all',    label: 'todas' },
+    { key: 'local',  label: project ? `local·${project}` : 'local' },
+    { key: 'global', label: 'global' },
+  ]
 
   return (
-    <div className="flex items-center gap-1 bg-zinc-900 rounded-lg p-1">
-      {btn('all', 'Todas')}
-      {btn('local', project ? `Local · ${project}` : 'Local')}
-      {btn('global', 'Global')}
+    <div className="flex items-center gap-0 border border-border rounded overflow-hidden">
+      {options.map(({ key, label }, i) => (
+        <button
+          key={key}
+          onClick={() => onChange(key)}
+          className={`
+            flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono transition-colors
+            ${i !== 0 ? 'border-l border-border' : ''}
+            ${value === key
+              ? 'bg-s2 text-amber'
+              : 'bg-surface text-muted hover:text-tx hover:bg-s2'
+            }
+          `}
+        >
+          {label}
+          <span className={`
+            text-[10px] px-1 py-0 rounded tabular-nums
+            ${value === key ? 'bg-faint text-amber' : 'bg-faint text-muted'}
+          `}>
+            {counts[key]}
+          </span>
+        </button>
+      ))}
     </div>
   )
 }

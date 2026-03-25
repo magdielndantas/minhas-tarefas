@@ -10,27 +10,29 @@ import EmptyState from '@/components/EmptyState'
 
 type ScopeFilter = 'all' | 'local' | 'global'
 
-function SkeletonCard() {
+const SKELETON_WIDTHS = ['max-w-xs', 'max-w-sm', 'max-w-[200px]']
+
+function SkeletonRow({ i }: { i: number }) {
   return (
-    <div className="border-l-2 border-l-zinc-700 bg-zinc-900 rounded-r px-3 py-2.5 animate-pulse">
-      <div className="flex items-center gap-2">
-        <div className="w-1.5 h-1.5 rounded-full bg-zinc-700" />
-        <div className="h-3 bg-zinc-700 rounded w-48" />
-        <div className="ml-auto h-3 bg-zinc-800 rounded w-12" />
-      </div>
+    <div className="flex items-center gap-3 px-5 py-3 min-h-[44px] border-b border-border"
+      style={{ animationDelay: `${i * 0.08}s` }}>
+      <div className="w-6 h-2 skeleton-shimmer rounded" />
+      <div className={`flex-1 h-3 skeleton-shimmer rounded ${SKELETON_WIDTHS[i % 3]}`} />
+      <div className="w-12 h-2 skeleton-shimmer rounded" />
+      <div className="w-5 h-2 skeleton-shimmer rounded" />
     </div>
   )
 }
 
 export default function Home() {
-  const [allTasks, setAllTasks]       = useState<Task[]>([])
-  const [loading, setLoading]         = useState(true)
-  const [theme, setTheme]             = useState<'dark' | 'light'>('dark')
+  const [allTasks, setAllTasks]   = useState<Task[]>([])
+  const [loading, setLoading]     = useState(true)
+  const [theme, setTheme]         = useState<'dark' | 'light'>('dark')
 
-  const [scope, setScope]             = useState<ScopeFilter>('all')
-  const [status, setStatus]           = useState<TaskStatus | 'all'>('open')
-  const [priority, setPriority]       = useState<TaskPriority | 'all'>('all')
-  const [search, setSearch]           = useState('')
+  const [scope, setScope]         = useState<ScopeFilter>('all')
+  const [status, setStatus]       = useState<TaskStatus | 'all'>('open')
+  const [priority, setPriority]   = useState<TaskPriority | 'all'>('all')
+  const [search, setSearch]       = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
 
   const fetchTasks = useCallback(async () => {
@@ -38,11 +40,8 @@ export default function Home() {
       const res = await fetch('/api/tasks?status=all&scope=all')
       const data = await res.json() as Task[]
       setAllTasks(data)
-    } catch {
-      // silent
-    } finally {
-      setLoading(false)
-    }
+    } catch { /* silent */ }
+    finally { setLoading(false) }
   }, [])
 
   useEffect(() => { fetchTasks() }, [fetchTasks])
@@ -60,18 +59,12 @@ export default function Home() {
     fetchTasks()
   }
 
-  const availableTags = Array.from(
-    new Set(allTasks.flatMap((t) => t.tags))
-  ).sort()
+  const availableTags = Array.from(new Set(allTasks.flatMap((t) => t.tags))).sort()
 
   const hasFilters = scope !== 'all' || status !== 'open' || priority !== 'all' || search !== '' || selectedTags.length > 0
 
   const clearFilters = () => {
-    setScope('all')
-    setStatus('open')
-    setPriority('all')
-    setSearch('')
-    setSelectedTags([])
+    setScope('all'); setStatus('open'); setPriority('all'); setSearch(''); setSelectedTags([])
   }
 
   const filtered = allTasks
@@ -84,73 +77,93 @@ export default function Home() {
       t.title.toLowerCase().includes(search.toLowerCase()) ||
       (t.notes?.toLowerCase().includes(search.toLowerCase()) ?? false)
     )
-    .filter((t) =>
-      selectedTags.length === 0 ||
-      selectedTags.some((tag) => t.tags.includes(tag))
-    )
+    .filter((t) => selectedTags.length === 0 || selectedTags.some((tag) => t.tags.includes(tag)))
 
-  const currentProject = allTasks
-    .filter((t) => t.scope === 'local' && t.project)
-    .map((t) => t.project!)[0]
+  const currentProject = allTasks.find((t) => t.scope === 'local' && t.project)?.project
 
   return (
-    <main className="max-w-2xl mx-auto px-4 py-6 space-y-5">
+    <div className="min-h-screen bg-bg flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-mono text-zinc-500">minhas-tarefas</span>
-        <button
-          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          className="text-xs font-mono text-zinc-500 hover:text-zinc-300 transition-colors"
-        >
-          {theme === 'dark' ? '☀ light' : '☾ dark'}
-        </button>
+      <header className="sticky top-0 z-10 border-b border-border bg-bg/95 backdrop-blur-sm">
+        <div className="max-w-3xl mx-auto px-6 py-4 flex items-start justify-between gap-4">
+          <div className="space-y-2">
+            <h1 className="font-display font-extrabold text-xl tracking-tight text-tx leading-none">
+              minhas<span className="text-amber">-</span>tarefas
+            </h1>
+            <StatsBar tasks={allTasks} />
+          </div>
+          <button
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="text-[11px] font-mono text-muted hover:text-tx transition-colors mt-0.5 flex-shrink-0"
+            aria-label="toggle theme"
+          >
+            {theme === 'dark' ? '◐ light' : '◑ dark'}
+          </button>
+        </div>
+      </header>
+
+      {/* Controls */}
+      <div className="border-b border-border bg-surface">
+        <div className="max-w-3xl mx-auto px-6 py-3 space-y-3">
+          <ScopeToggle
+            value={scope}
+            onChange={setScope}
+            tasks={allTasks}
+            project={currentProject}
+          />
+          <FilterBar
+            status={status}
+            priority={priority}
+            search={search}
+            availableTags={availableTags}
+            selectedTags={selectedTags}
+            onStatusChange={setStatus}
+            onPriorityChange={setPriority}
+            onSearchChange={setSearch}
+            onTagToggle={(tag) =>
+              setSelectedTags((prev) =>
+                prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+              )
+            }
+            onClear={clearFilters}
+          />
+        </div>
       </div>
 
-      {/* Stats */}
-      <StatsBar tasks={allTasks} />
-
-      {/* Scope */}
-      <ScopeToggle
-        value={scope}
-        onChange={setScope}
-        tasks={allTasks}
-        project={currentProject}
-      />
-
-      {/* Filters */}
-      <FilterBar
-        status={status}
-        priority={priority}
-        search={search}
-        availableTags={availableTags}
-        selectedTags={selectedTags}
-        onStatusChange={setStatus}
-        onPriorityChange={setPriority}
-        onSearchChange={setSearch}
-        onTagToggle={(tag) =>
-          setSelectedTags((prev) =>
-            prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-          )
-        }
-        onClear={clearFilters}
-      />
+      {/* Column headers */}
+      {!loading && filtered.length > 0 && (
+        <div className="max-w-3xl mx-auto w-full px-4 border-b border-border">
+          <div className="flex items-center gap-3 px-4 py-1.5 text-[10px] font-mono text-muted uppercase tracking-widest">
+            <span className="w-6 text-right">#</span>
+            <span className="flex-1">título</span>
+            <span className="hidden sm:inline w-20 text-right">prazo</span>
+            <span className="w-5 text-center">pr</span>
+          </div>
+        </div>
+      )}
 
       {/* Task list */}
-      <div className="space-y-1.5">
-        {loading ? (
-          <>
-            <SkeletonCard />
-            <SkeletonCard />
-            <SkeletonCard />
-          </>
-        ) : filtered.length === 0 ? (
-          <EmptyState hasFilters={hasFilters} onClear={clearFilters} />
-        ) : (
-          filtered.map((task) => (
-            <TaskCard key={task.id} task={task} onUpdate={updateTask} />
-          ))
-        )}
-      </div>
-    </main>
+      <main className="max-w-3xl mx-auto w-full flex-1">
+        <div className="border-x border-border min-h-full">
+          {loading ? (
+            [0,1,2].map((i) => <SkeletonRow key={i} i={i} />)
+          ) : filtered.length === 0 ? (
+            <EmptyState hasFilters={hasFilters} onClear={clearFilters} />
+          ) : (
+            filtered.map((task, i) => (
+              <TaskCard key={task.id} task={task} onUpdate={updateTask} index={i} />
+            ))
+          )}
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="max-w-3xl mx-auto w-full px-6 py-3 border-t border-border mt-auto">
+        <p className="text-[10px] font-mono text-muted">
+          {filtered.length} {filtered.length === 1 ? 'tarefa' : 'tarefas'}
+          {hasFilters && ' filtradas'}
+        </p>
+      </footer>
+    </div>
   )
 }
