@@ -1,0 +1,5 @@
+/data/tasks.json
+/data/
+.env*.local
+node_modules/
+.next/
