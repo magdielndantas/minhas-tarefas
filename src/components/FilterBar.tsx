@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type RefObject } from 'react'
 import type { TaskPriority, TaskStatus } from '@/lib/types'
 
 interface Props {
@@ -9,6 +9,7 @@ interface Props {
   search: string
   availableTags: string[]
   selectedTags: string[]
+  searchRef?: RefObject<HTMLInputElement>
   onStatusChange: (v: TaskStatus | 'all') => void
   onPriorityChange: (v: TaskPriority | 'all') => void
   onSearchChange: (v: string) => void
@@ -37,7 +38,7 @@ const priorityColors: Record<TaskPriority, string> = {
 }
 
 export default function FilterBar({
-  status, priority, search, availableTags, selectedTags,
+  status, priority, search, availableTags, selectedTags, searchRef,
   onStatusChange, onPriorityChange, onSearchChange, onTagToggle, onClear,
 }: Props) {
   const [tagsOpen, setTagsOpen] = useState(false)
@@ -107,6 +108,7 @@ export default function FilterBar({
         <div className="ml-auto flex items-center gap-2 bg-surface border border-border rounded px-2.5 py-1 focus-within:border-amber/40 transition-colors">
           <span className="text-muted text-xs">_</span>
           <input
+            ref={searchRef}
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="buscar"

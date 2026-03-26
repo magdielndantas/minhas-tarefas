@@ -20,6 +20,22 @@
   --violet:    #7c6af0;
 }
 
+html.light {
+  --bg:        #f8f7f4;
+  --surface:   #f0ede8;
+  --surface-2: #e8e4dd;
+  --border:    #d8d3ca;
+  --border-2:  #c4beb4;
+  --text:      #1a1916;
+  --muted:     #7a7368;
+  --faint:     #e4e0d8;
+  --amber:     #b87400;
+  --amber-dim: #f5e0b0;
+  --red:       #c0392b;
+  --green:     #1e7a4a;
+  --violet:    #5b4fcf;
+}
+
 * { box-sizing: border-box; }
 
 html { background: var(--bg); }

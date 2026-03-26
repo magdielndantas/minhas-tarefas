@@ -1,12 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import Link from 'next/link'
 import type { Task } from '@/lib/types'
 
 interface Props {
   task: Task
   onUpdate: (id: number, patch: Partial<Task>) => void
   index?: number
+  focused?: boolean
 }
 
 const priorityLine: Record<Task['priority'], string> = {
@@ -16,40 +18,56 @@ const priorityLine: Record<Task['priority'], string> = {
 }
 
 const priorityLabel: Record<Task['priority'], string> = {
-  high:   'HI',
-  medium: 'MD',
-  low:    'LO',
+  high: 'HI', medium: 'MD', low: 'LO',
 }
 
 const priorityText: Record<Task['priority'], string> = {
-  high:   'text-hi',
-  medium: 'text-amber',
-  low:    'text-muted',
+  high: 'text-hi', medium: 'text-amber', low: 'text-muted',
 }
 
 function formatDate(iso?: string) {
   if (!iso) return null
-  const d = new Date(iso)
-  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '')
+  return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '')
 }
 
-export default function TaskCard({ task, onUpdate, index = 0 }: Props) {
-  const [expanded, setExpanded] = useState(false)
+export default function TaskCard({ task, onUpdate, index = 0, focused = false }: Props) {
+  const [expanded, setExpanded]     = useState(false)
+  const [editing, setEditing]       = useState(false)
+  const [editTitle, setEditTitle]   = useState(task.title)
+  const editRef  = useRef<HTMLInputElement>(null)
+  const rowRef   = useRef<HTMLDivElement>(null)
 
   const isDone      = task.status === 'done'
   const isCancelled = task.status === 'cancelled'
 
+  useEffect(() => {
+    if (editing) editRef.current?.focus()
+  }, [editing])
+
+  // Scroll into view quando focado por teclado
+  useEffect(() => {
+    if (focused) rowRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [focused])
+
+  const submitEdit = () => {
+    const trimmed = editTitle.trim()
+    if (trimmed && trimmed !== task.title) onUpdate(task.id, { title: trimmed })
+    setEditing(false)
+  }
+
   return (
     <div
+      ref={rowRef}
       className={`
         group relative flex flex-col border-b border-border last:border-b-0
-        transition-colors duration-150 hover:bg-s2
+        transition-colors duration-150
         row-enter
+        ${focused ? 'bg-s2 ring-1 ring-inset ring-amber/30' : 'hover:bg-s2'}
         ${isCancelled ? 'opacity-20' : isDone ? 'opacity-40' : ''}
       `}
       style={{ animationDelay: `${index * 0.04}s` }}
     >
-      {/* Priority accent line — always thin, thick on hover */}
+      {/* Priority accent line */}
       <div className={`
         absolute left-0 top-0 bottom-0 transition-all duration-200
         w-px group-hover:w-[3px] ${priorityLine[task.priority]}
@@ -64,22 +82,35 @@ export default function TaskCard({ task, onUpdate, index = 0 }: Props) {
           #{task.id}
         </span>
 
-        {/* Title — sans-serif para legibilidade */}
-        <span
-          onClick={() => setExpanded(!expanded)}
-          className={`
-            flex-1 font-sans text-[15px] font-medium cursor-pointer leading-snug
-            transition-colors duration-100
-            ${isDone
-              ? 'line-through text-muted decoration-muted/60'
-              : 'text-tx group-hover:text-white'
-            }
-          `}
-        >
-          {task.title}
-        </span>
+        {/* Title or edit input */}
+        {editing ? (
+          <input
+            ref={editRef}
+            value={editTitle}
+            onChange={(e) => setEditTitle(e.target.value)}
+            onBlur={submitEdit}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') submitEdit()
+              if (e.key === 'Escape') { setEditTitle(task.title); setEditing(false) }
+            }}
+            className="flex-1 bg-transparent font-sans text-[15px] font-medium text-tx outline-none border-b border-amber/50"
+          />
+        ) : (
+          <span
+            onDoubleClick={() => { setEditTitle(task.title); setEditing(true) }}
+            onClick={() => setExpanded(!expanded)}
+            className={`
+              flex-1 font-sans text-[15px] font-medium cursor-pointer leading-snug
+              transition-colors duration-100
+              ${isDone ? 'line-through text-muted decoration-muted/60' : 'text-tx group-hover:text-white'}
+            `}
+            title="clique para expandir · duplo clique para editar"
+          >
+            {task.title}
+          </span>
+        )}
 
-        {/* Tags — aparecem no hover */}
+        {/* Tags */}
         <div className="
           flex items-center gap-1 flex-shrink-0
           opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0
@@ -107,7 +138,7 @@ export default function TaskCard({ task, onUpdate, index = 0 }: Props) {
         {/* Due date */}
         <span className="text-[11px] font-mono w-16 text-right flex-shrink-0 tabular-nums leading-none">
           {task.dueDate
-            ? <span className={new Date(task.dueDate) < new Date() ? 'text-hi font-medium' : 'text-tx'}>
+            ? <span className={new Date(task.dueDate) < new Date() && task.status === 'open' ? 'text-hi font-medium' : 'text-tx'}>
                 {formatDate(task.dueDate)}
               </span>
             : <span className="text-border2">——</span>
@@ -120,7 +151,7 @@ export default function TaskCard({ task, onUpdate, index = 0 }: Props) {
         </span>
       </div>
 
-      {/* Action buttons — animação de entrada com grid trick */}
+      {/* Action buttons — smooth height with grid trick */}
       <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-[grid-template-rows] duration-200 ease-out">
         <div className="overflow-hidden min-h-0">
           <div className="flex items-center gap-5 px-5 pb-2.5 ml-9
@@ -152,12 +183,24 @@ export default function TaskCard({ task, onUpdate, index = 0 }: Props) {
                 ↩ reabrir
               </button>
             )}
+            <button
+              onClick={() => { setEditTitle(task.title); setEditing(true) }}
+              className="text-[12px] font-mono text-muted hover:text-tx active:scale-95 transition-all duration-100"
+            >
+              ✎ editar
+            </button>
+            <Link
+              href={`/tasks/${task.id}`}
+              className="text-[12px] font-mono text-muted hover:text-amber transition-colors"
+            >
+              ↗ detalhes
+            </Link>
           </div>
         </div>
       </div>
 
-      {/* Detalhes expandidos */}
-      {expanded && (task.notes || task.dueDate) && (
+      {/* Expanded details */}
+      {expanded && !editing && (task.notes || task.dueDate) && (
         <div className="px-5 pb-3 ml-9 space-y-1 animate-fade-in">
           {task.notes && (
             <p className="text-sm font-sans text-muted italic leading-relaxed">{task.notes}</p>

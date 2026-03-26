@@ -43,6 +43,20 @@ Para abrir a web UI (opcional):
 npm run dev   # http://localhost:3000
 ```
 
+Para importar TODOs do código como tarefas:
+
+```bash
+npm run scan                        # varre o diretório atual
+npm run scan -- --dir /path/projeto # varre outro diretório
+```
+
+Para exportar tarefas:
+
+```
+http://localhost:3000/api/tasks/export           # Markdown
+http://localhost:3000/api/tasks/export?format=csv # CSV
+```
+
 ---
 
 ## Comandos disponíveis
@@ -59,6 +73,9 @@ npm run dev   # http://localhost:3000
 | `/tarefas concluir <id>` | Marca tarefa como concluída |
 | `/tarefas cancelar <id>` | Cancela uma tarefa |
 | `/tarefas reabrir <id>` | Reabre uma tarefa concluída ou cancelada |
+| `/tarefas buscar <query>` | Busca tarefas pelo título ou notas |
+| `/tarefas editar <id> <campo> <valor>` | Edita um campo (título, prazo, prioridade, notas) |
+| `/tarefas exportar` | Instrução para exportar em Markdown ou CSV |
 | `/tarefas abrir painel` | Instrução para abrir a web UI |
 
 ---
