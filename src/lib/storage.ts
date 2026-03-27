@@ -22,6 +22,17 @@ function isValidStore(data: unknown): data is TaskStore {
   )
 }
 
+function normalize(store: TaskStore): TaskStore {
+  return {
+    ...store,
+    tasks: store.tasks.map((t) => ({
+      ...t,
+      comments: t.comments ?? [],
+      activity: t.activity ?? [],
+    })),
+  }
+}
+
 export function readTasks(): TaskStore {
   ensureDir()
   if (!fs.existsSync(DATA_FILE)) {
@@ -33,12 +44,12 @@ export function readTasks(): TaskStore {
     const parsed = JSON.parse(raw)
     if (!isValidStore(parsed)) {
       console.error('[storage] tasks.json malformado — restaurando backup')
-      return restoreBackup()
+      return normalize(restoreBackup())
     }
-    return parsed
+    return normalize(parsed)
   } catch {
     console.error('[storage] falha ao ler tasks.json — restaurando backup')
-    return restoreBackup()
+    return normalize(restoreBackup())
   }
 }
 

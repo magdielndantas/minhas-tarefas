@@ -8,6 +8,11 @@ import FilterBar from '@/components/FilterBar'
 import TaskCard from '@/components/TaskCard'
 import CreateTask from '@/components/CreateTask'
 import EmptyState from '@/components/EmptyState'
+import {
+  hasUnreadClaudeComment,
+  sendTaskNotification,
+  requestNotificationPermission,
+} from '@/lib/notifications'
 
 type ScopeFilter = 'all' | 'local' | 'global'
 
@@ -39,13 +44,32 @@ export default function Home() {
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [projectFilter, setProjectFilter] = useState<string | null>(null)
   const [focusedIndex, setFocusedIndex]   = useState<number | null>(null)
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission | null>(null)
   const searchRef    = useRef<HTMLInputElement>(null)
   const filteredRef  = useRef<Task[]>([])
+  const prevClaudeCountRef = useRef<Map<number, number>>(new Map())
 
   const fetchTasks = useCallback(async () => {
     try {
       const res = await fetch('/api/tasks?status=all&scope=all')
       const data = await res.json() as Task[]
+
+      // Detectar novos comentários do Claude desde o último fetch
+      const prev = prevClaudeCountRef.current
+      if (prev.size > 0) {
+        data.forEach((task) => {
+          const claudeCount = task.comments.filter((c) => c.author === 'claude').length
+          const prevCount = prev.get(task.id) ?? 0
+          if (claudeCount > prevCount && document.hidden) {
+            sendTaskNotification(task)
+          }
+        })
+      }
+      // Atualizar snapshot
+      const next = new Map<number, number>()
+      data.forEach((t) => next.set(t.id, t.comments.filter((c) => c.author === 'claude').length))
+      prevClaudeCountRef.current = next
+
       setAllTasks(data)
     } catch { /* silent */ }
     finally { setLoading(false) }
@@ -53,6 +77,11 @@ export default function Home() {
 
   // Initial fetch
   useEffect(() => { fetchTasks() }, [fetchTasks])
+
+  // Ler permissão de notificação (client-side only)
+  useEffect(() => {
+    if ('Notification' in window) setNotifPermission(Notification.permission)
+  }, [])
 
   // Auto-refresh a cada 5s
   useEffect(() => {
@@ -133,7 +162,8 @@ export default function Home() {
 
   const availableTags  = Array.from(new Set(allTasks.flatMap((t) => t.tags))).sort()
   const allProjects    = Array.from(new Set(allTasks.filter((t) => t.project).map((t) => t.project!))).sort()
-  const currentProject = allTasks.find((t) => t.scope === 'local' && t.project)?.project
+  const localProjects  = Array.from(new Set(allTasks.filter((t) => t.scope === 'local' && t.project).map((t) => t.project!)))
+  const currentProject = localProjects.length === 1 ? localProjects[0] : undefined
 
   const hasFilters = scope !== 'all' || status !== 'open' || priority !== 'all' || search !== '' || selectedTags.length > 0 || projectFilter !== null
 
@@ -168,6 +198,19 @@ export default function Home() {
             <StatsBar tasks={allTasks} />
           </div>
           <div className="flex items-center gap-4 mt-0.5">
+            {/* Notificações */}
+            {notifPermission === 'default' && (
+              <button
+                onClick={async () => {
+                  const p = await requestNotificationPermission()
+                  setNotifPermission(p)
+                }}
+                className="text-[11px] font-mono text-accent hover:text-tx transition-colors"
+                title="receber notificações quando o Claude responder"
+              >
+                ◎ notificações
+              </button>
+            )}
             {/* Export */}
             <div className="flex items-center gap-2">
               <a
@@ -260,7 +303,7 @@ export default function Home() {
       {/* Task list */}
       <main className="max-w-3xl mx-auto w-full flex-1">
         <div className="border-x border-border min-h-full">
-          <CreateTask onCreated={fetchTasks} defaultProject={currentProject} />
+          <CreateTask onCreated={fetchTasks} defaultProject={projectFilter ?? currentProject} />
           {loading ? (
             [0, 1, 2].map((i) => <SkeletonRow key={i} i={i} />)
           ) : filtered.length === 0 ? (
@@ -273,6 +316,7 @@ export default function Home() {
                 onUpdate={updateTask}
                 index={i}
                 focused={focusedIndex === i}
+                hasUnread={hasUnreadClaudeComment(task)}
               />
             ))
           )}

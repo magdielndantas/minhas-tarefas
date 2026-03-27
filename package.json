@@ -9,7 +9,10 @@
     "lint": "next lint",
     "setup": "node scripts/setup.mjs",
     "scan": "node scripts/scan.mjs",
-    "remind": "node scripts/remind.mjs"
+    "remind": "node scripts/remind.mjs",
+    "autostart": "node scripts/autostart.mjs install",
+    "autostop": "node scripts/autostart.mjs uninstall",
+    "autostatus": "node scripts/autostart.mjs status"
   },
   "dependencies": {
     "next": "14.2.5",

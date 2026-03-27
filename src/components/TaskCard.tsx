@@ -9,6 +9,7 @@ interface Props {
   onUpdate: (id: number, patch: Partial<Task>) => void
   index?: number
   focused?: boolean
+  hasUnread?: boolean
 }
 
 const priorityLine: Record<Task['priority'], string> = {
@@ -30,7 +31,7 @@ function formatDate(iso?: string) {
   return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '')
 }
 
-export default function TaskCard({ task, onUpdate, index = 0, focused = false }: Props) {
+export default function TaskCard({ task, onUpdate, index = 0, focused = false, hasUnread = false }: Props) {
   const [expanded, setExpanded]     = useState(false)
   const [editing, setEditing]       = useState(false)
   const [editTitle, setEditTitle]   = useState(task.title)
@@ -77,9 +78,12 @@ export default function TaskCard({ task, onUpdate, index = 0, focused = false }:
       {/* Main row */}
       <div className="flex items-center gap-3 px-5 py-3 min-h-[44px]">
 
-        {/* ID */}
-        <span className="text-[11px] font-mono text-muted w-6 text-right flex-shrink-0 tabular-nums leading-none">
+        {/* ID + unread dot */}
+        <span className="relative text-[11px] font-mono text-muted w-6 text-right flex-shrink-0 tabular-nums leading-none">
           #{task.id}
+          {hasUnread && (
+            <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-accent" title="nova resposta do Claude" />
+          )}
         </span>
 
         {/* Title or edit input */}

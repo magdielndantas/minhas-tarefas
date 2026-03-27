@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import type { Task, TaskPriority, TaskScope, TaskStatus } from '@/lib/types'
+import Comments from '@/components/Comments'
+import { markTaskRead } from '@/lib/notifications'
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -160,6 +162,9 @@ export default function TaskDetail() {
   }, [id])
 
   useEffect(() => { fetch_() }, [fetch_])
+
+  // Marcar como lida ao abrir
+  useEffect(() => { markTaskRead(Number(id)) }, [id])
 
   // Auto-refresh a cada 5s (mesmo intervalo do dashboard)
   useEffect(() => {
@@ -383,6 +388,35 @@ export default function TaskDetail() {
           </Field>
 
         </div>
+
+        {/* Comments */}
+        <div className="space-y-3 pt-2">
+          <h2 className="text-[11px] font-mono text-muted uppercase tracking-widest">comentários</h2>
+          <Comments taskId={task.id} comments={task.comments ?? []} onAdded={fetch_} />
+        </div>
+
+        {/* Activity log */}
+        {(task.activity ?? []).length > 0 && (
+          <details className="group">
+            <summary className="text-[11px] font-mono text-muted uppercase tracking-widest cursor-pointer hover:text-tx transition-colors list-none flex items-center gap-1.5">
+              <span className="group-open:rotate-90 transition-transform inline-block">▶</span>
+              atividade ({task.activity.length})
+            </summary>
+            <div className="mt-3 space-y-1.5 border-l border-border pl-4">
+              {[...task.activity].reverse().map((a, i) => (
+                <div key={i} className="flex items-start gap-2">
+                  <span className={`text-[10px] font-mono mt-0.5 ${a.author === 'claude' ? 'text-accent' : 'text-muted'}`}>
+                    {a.author === 'claude' ? '⬡' : '◎'}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs font-mono text-tx">{a.action}</span>
+                    <span className="ml-2 text-[10px] font-mono text-muted">{fmtFull(a.at)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </details>
+        )}
 
         {/* Danger zone */}
         <div className="pt-4">

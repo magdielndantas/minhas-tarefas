@@ -15,6 +15,7 @@ export default function CreateTask({ onCreated, defaultProject }: Props) {
   const [scope, setScope]       = useState<TaskScope>('local')
   const [dueDate, setDueDate]   = useState('')
   const [saving, setSaving]     = useState(false)
+  const [error, setError]       = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -22,15 +23,16 @@ export default function CreateTask({ onCreated, defaultProject }: Props) {
   }, [open])
 
   const reset = () => {
-    setTitle(''); setPriority('medium'); setScope('local'); setDueDate(''); setOpen(false)
+    setTitle(''); setPriority('medium'); setScope('local'); setDueDate(''); setError(null); setOpen(false)
   }
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim()) return
     setSaving(true)
+    setError(null)
     try {
-      await fetch('/api/tasks', {
+      const res = await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -44,8 +46,15 @@ export default function CreateTask({ onCreated, defaultProject }: Props) {
           source: 'manual',
         } satisfies Partial<Task>),
       })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setError((data as { error?: string }).error ?? `Erro ${res.status}`)
+        return
+      }
       reset()
       onCreated()
+    } catch {
+      setError('Não foi possível conectar ao servidor')
     } finally {
       setSaving(false)
     }
@@ -91,6 +100,13 @@ export default function CreateTask({ onCreated, defaultProject }: Props) {
           onKeyDown={(e) => e.key === 'Escape' && reset()}
         />
       </div>
+
+      {/* Error */}
+      {error && (
+        <div className="px-5 pb-2 ml-9">
+          <span className="text-[11px] font-mono text-hi">{error}</span>
+        </div>
+      )}
 
       {/* Options row */}
       <div className="flex items-center gap-2 px-5 pb-3 ml-9 flex-wrap">

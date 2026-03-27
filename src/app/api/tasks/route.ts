@@ -101,6 +101,8 @@ export async function POST(req: NextRequest) {
       source: body.source ?? 'manual',
       createdAt: new Date().toISOString(),
       doneAt: body.doneAt,
+      comments: [],
+      activity: [{ at: new Date().toISOString(), author: 'user', action: 'created' }],
     }
 
     store.tasks.push(newTask)
