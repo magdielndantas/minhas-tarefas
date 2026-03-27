@@ -1,48 +1,32 @@
 # Roadmap — minhas-tarefas
 
-Estado atual: v1 funcional e completo para uso pessoal diário.
+Estado atual: v1.1 — melhorias de UX e novos scripts implementados.
+
+---
+
+## Concluído (v1.1)
+
+- ✅ **Filtros persistentes** — scope, status, prioridade, tags e projeto salvos em `localStorage`
+- ✅ **Modal de atalhos `?`** — pressione `?` ou clique em "atalhos" no rodapé
+- ✅ **`npm run weekly`** — relatório semanal: concluídas, criadas, vencidas nos últimos 7 dias
+- ✅ **`filePath` no todo-scan** — tarefas de scan armazenam o caminho absoluto do arquivo e linha
+- ✅ **Botão `⎘ abrir` no TaskCard** — copia `code --goto /caminho/arquivo.ts:42` para o clipboard
 
 ---
 
 ## Próximos passos (v1.x — pequenas melhorias)
 
-### Ações de contexto — abrir arquivos e projetos
-
-A ideia: tarefas criadas via `todo-scan` ou `slash-command` deveriam ter botões de ação rápida diretamente na UI.
-
-**O que falta:**
-- Botão "abrir projeto" → copia `code /path/to/project` para clipboard (não podemos abrir diretamente do browser)
-- Botão "abrir arquivo" → para tarefas do `todo-scan`, mostrar `arquivo:linha` e copiar o caminho
-- Campo `filePath` no modelo de dados — armazenar `src/components/Foo.tsx:42` na tarefa de scan
-- No `tarefa.md`: `/tarefa abrir <id>` → orienta o usuário a rodar `code <path>`
-
-**Implementação estimada:** 1 sessão
-- Adicionar `filePath?: string` em `types.ts`
-- Atualizar `scan.mjs` para popular o campo
-- Botão de clipboard na `TaskCard` e na página de detalhe
-
----
-
 ### Atalhos de teclado avançados
 
-Já temos `j/k/space/e/x/n/⌘K`. O que falta:
+Já temos `j/k/space/e/x/n/⌘K/?`. O que falta:
 
 - `r` — reabrir tarefa focada
 - `p` — editar prioridade inline (cicla: alta → média → baixa)
 - `d` — editar prazo inline (abre datepicker na própria linha)
 - `g g` — ir para primeira tarefa (vim-style)
 - `G` — ir para última tarefa
-- `?` — mostrar modal de atalhos
 
 **Implementação estimada:** 1 sessão
-
----
-
-### Filtros persistentes
-
-Hoje os filtros resetam ao recarregar a página. Salvar em `localStorage` para que o usuário sempre volte ao estado que deixou.
-
-**Implementação estimada:** 30min
 
 ---
 
