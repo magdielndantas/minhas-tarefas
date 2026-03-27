@@ -76,6 +76,7 @@ for (const file of walk(TARGET_DIR)) {
       project:   PROJECT,
       tags:      [kind.toLowerCase(), PROJECT],
       notes:     note,
+      filePath:  `${file}:${idx + 1}`,
       source:    'todo-scan',
       createdAt: new Date().toISOString(),
     }

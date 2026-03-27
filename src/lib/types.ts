@@ -25,6 +25,7 @@ export interface Task {
   project?: string
   tags: string[]
   notes?: string
+  filePath?: string
   dueDate?: string
   source: 'manual' | 'slash-command' | 'todo-scan'
   createdAt: string

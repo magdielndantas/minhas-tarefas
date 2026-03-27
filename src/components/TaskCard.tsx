@@ -35,6 +35,7 @@ export default function TaskCard({ task, onUpdate, index = 0, focused = false, h
   const [expanded, setExpanded]     = useState(false)
   const [editing, setEditing]       = useState(false)
   const [editTitle, setEditTitle]   = useState(task.title)
+  const [copied, setCopied]         = useState(false)
   const editRef  = useRef<HTMLInputElement>(null)
   const rowRef   = useRef<HTMLDivElement>(null)
 
@@ -193,6 +194,19 @@ export default function TaskCard({ task, onUpdate, index = 0, focused = false, h
             >
               ✎ editar
             </button>
+            {task.filePath && (
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(`code --goto ${task.filePath}`)
+                  setCopied(true)
+                  setTimeout(() => setCopied(false), 1500)
+                }}
+                className="text-[12px] font-mono text-muted hover:text-accent active:scale-95 transition-all duration-100"
+                title={task.filePath}
+              >
+                {copied ? '✓ copiado' : '⎘ abrir'}
+              </button>
+            )}
             <Link
               href={`/tasks/${task.id}`}
               className="text-[12px] font-mono text-muted hover:text-amber transition-colors"
@@ -204,10 +218,13 @@ export default function TaskCard({ task, onUpdate, index = 0, focused = false, h
       </div>
 
       {/* Expanded details */}
-      {expanded && !editing && (task.notes || task.dueDate) && (
+      {expanded && !editing && (task.notes || task.dueDate || task.filePath) && (
         <div className="px-5 pb-3 ml-9 space-y-1 animate-fade-in">
           {task.notes && (
             <p className="text-sm font-sans text-muted italic leading-relaxed">{task.notes}</p>
+          )}
+          {task.filePath && (
+            <p className="text-[11px] font-mono text-muted/70 truncate" title={task.filePath}>{task.filePath}</p>
           )}
           {task.dueDate && (
             <p className="text-[11px] font-mono text-muted">prazo: {formatDate(task.dueDate)}</p>

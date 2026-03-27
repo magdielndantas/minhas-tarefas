@@ -44,6 +44,7 @@ export default function Home() {
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [projectFilter, setProjectFilter] = useState<string | null>(null)
   const [focusedIndex, setFocusedIndex]   = useState<number | null>(null)
+  const [showShortcuts, setShowShortcuts] = useState(false)
   const [notifPermission, setNotifPermission] = useState<NotificationPermission | null>(null)
   const searchRef    = useRef<HTMLInputElement>(null)
   const filteredRef  = useRef<Task[]>([])
@@ -77,6 +78,27 @@ export default function Home() {
 
   // Initial fetch
   useEffect(() => { fetchTasks() }, [fetchTasks])
+
+  // Carregar filtros do localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('tarefas:filters')
+      if (!saved) return
+      const f = JSON.parse(saved)
+      if (f.scope)         setScope(f.scope)
+      if (f.status)        setStatus(f.status)
+      if (f.priority)      setPriority(f.priority)
+      if (f.selectedTags)  setSelectedTags(f.selectedTags)
+      if (f.projectFilter !== undefined) setProjectFilter(f.projectFilter)
+    } catch { /* ignore */ }
+  }, [])
+
+  // Salvar filtros no localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('tarefas:filters', JSON.stringify({ scope, status, priority, selectedTags, projectFilter }))
+    } catch { /* ignore */ }
+  }, [scope, status, priority, selectedTags, projectFilter])
 
   // Ler permissão de notificação (client-side only)
   useEffect(() => {
@@ -120,6 +142,7 @@ export default function Home() {
         setFocusedIndex((i) => Math.max((i ?? filteredRef.current.length) - 1, 0))
       } else if (e.key === 'Escape') {
         setFocusedIndex(null)
+        setShowShortcuts(false)
       } else if ((e.key === 'Enter' || e.key === ' ') && focusedIndex !== null) {
         e.preventDefault()
         const t = filteredRef.current[focusedIndex]
@@ -135,6 +158,8 @@ export default function Home() {
       } else if (e.key === 'n') {
         // foca no input de criação
         document.querySelector<HTMLButtonElement>('button[data-create]')?.click()
+      } else if (e.key === '?') {
+        setShowShortcuts((v) => !v)
       }
     }
     window.addEventListener('keydown', handler)
@@ -323,6 +348,45 @@ export default function Home() {
         </div>
       </main>
 
+      {/* Shortcuts modal */}
+      {showShortcuts && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-bg/80 backdrop-blur-sm"
+          onClick={() => setShowShortcuts(false)}
+        >
+          <div
+            className="bg-surface border border-border rounded-lg p-6 w-80 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h2 className="font-mono text-sm font-medium text-tx">atalhos de teclado</h2>
+              <button
+                onClick={() => setShowShortcuts(false)}
+                className="text-[11px] font-mono text-muted hover:text-tx"
+              >
+                esc
+              </button>
+            </div>
+            <div className="space-y-2">
+              {([
+                ['j / k', 'navegar entre tarefas'],
+                ['space / enter', 'concluir / reabrir'],
+                ['x', 'cancelar tarefa focada'],
+                ['e', 'abrir detalhes'],
+                ['n', 'nova tarefa'],
+                ['⌘K', 'focar busca'],
+                ['?', 'mostrar atalhos'],
+              ] as [string, string][]).map(([key, desc]) => (
+                <div key={key} className="flex items-center justify-between gap-4">
+                  <kbd className="text-[11px] font-mono text-amber bg-amber/10 px-1.5 py-0.5 rounded whitespace-nowrap">{key}</kbd>
+                  <span className="text-[11px] font-mono text-muted text-right">{desc}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Footer */}
       <footer className="max-w-3xl mx-auto w-full px-6 py-3 border-t border-border mt-auto">
         <div className="flex items-center justify-between">
@@ -337,6 +401,10 @@ export default function Home() {
             <span><kbd className="text-muted">x</kbd> cancelar</span>
             <span><kbd className="text-muted">n</kbd> nova</span>
             <span><kbd className="text-muted">⌘K</kbd> buscar</span>
+            <button
+              onClick={() => setShowShortcuts(true)}
+              className="text-muted hover:text-tx transition-colors"
+            ><kbd className="text-muted">?</kbd> atalhos</button>
           </div>
         </div>
       </footer>
